@@ -1,5 +1,6 @@
 package dev.nathanlively.views;
 
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.html.Footer;
@@ -15,11 +16,9 @@ import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.server.menu.MenuConfiguration;
 import com.vaadin.flow.server.menu.MenuEntry;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+
 import java.util.List;
 
-/**
- * The main view is a top-level placeholder for other views.
- */
 @Layout
 @AnonymousAllowed
 public class MainLayout extends AppLayout {
@@ -30,6 +29,12 @@ public class MainLayout extends AppLayout {
         setPrimarySection(Section.DRAWER);
         addDrawerContent();
         addHeaderContent();
+    }
+
+    @Override
+    protected void onAttach(AttachEvent attachEvent) {
+        super.onAttach(attachEvent);
+        addPageUnloadDetection();
     }
 
     private void addHeaderContent() {
@@ -68,9 +73,28 @@ public class MainLayout extends AppLayout {
     }
 
     private Footer createFooter() {
-        Footer layout = new Footer();
+        return new Footer();
+    }
 
-        return layout;
+    private void addPageUnloadDetection() {
+        getUI().ifPresent(ui -> ui.getPage().executeJs("""
+            window.addEventListener('beforeunload', function(e) {
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon('/api/shutdown', '');
+                } else {
+                    fetch('/api/shutdown', {
+                        method: 'POST',
+                        keepalive: true
+                    }).catch(() => {});
+                }
+            });
+            
+            window.addEventListener('pagehide', function(e) {
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon('/api/shutdown', '');
+                }
+            });
+            """));
     }
 
     @Override

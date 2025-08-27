@@ -18,7 +18,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @SpringBootApplication
 @PageTitle("Vaadin+Conveyor POC")
@@ -27,9 +27,9 @@ public class Application implements AppShellConfigurator, ApplicationListener<Ap
 
     private static ConfigurableApplicationContext context;
     private static final AtomicBoolean browserOpened = new AtomicBoolean(false);
-    private static final AtomicLong lastActivity = new AtomicLong(System.currentTimeMillis());
+    private static final AtomicInteger activeSessions = new AtomicInteger(0);
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private static final long SHUTDOWN_DELAY_MINUTES = 1; // Shut down after 5 minutes of no activity
+    private static final long NO_SESSIONS_SHUTDOWN_DELAY_SECONDS = 30; // Quick shutdown when no sessions
 
     public static void main(String[] args) {
         System.setProperty("java.awt.headless", "false");
@@ -37,7 +37,6 @@ public class Application implements AppShellConfigurator, ApplicationListener<Ap
 
         context = SpringApplication.run(Application.class, args);
 
-        // Start the shutdown monitor
         startShutdownMonitor();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -49,20 +48,29 @@ public class Application implements AppShellConfigurator, ApplicationListener<Ap
         }));
     }
 
-    public static void updateActivity() {
-        lastActivity.set(System.currentTimeMillis());
+    public static void sessionStarted() {
+        int count = activeSessions.incrementAndGet();
+        System.out.println("Session started. Active sessions: " + count);
+    }
+
+    public static void sessionEnded() {
+        int count = activeSessions.decrementAndGet();
+        System.out.println("Session ended. Active sessions: " + count);
+    }
+
+    public static void shutdownRequested() {
+        System.out.println("Shutdown requested via page unload");
+        System.exit(0);
     }
 
     private static void startShutdownMonitor() {
         scheduler.scheduleWithFixedDelay(() -> {
-            long timeSinceLastActivity = System.currentTimeMillis() - lastActivity.get();
-            long shutdownThreshold = SHUTDOWN_DELAY_MINUTES * 60 * 1000;
-
-            if (timeSinceLastActivity > shutdownThreshold) {
-                System.out.println("No activity detected for " + SHUTDOWN_DELAY_MINUTES + " minutes. Shutting down...");
+            int sessionCount = activeSessions.get();
+            if (sessionCount == 0) {
+                System.out.println("No active sessions for " + NO_SESSIONS_SHUTDOWN_DELAY_SECONDS + " seconds. Shutting down...");
                 System.exit(0);
             }
-        }, 1, 1, TimeUnit.MINUTES);
+        }, NO_SESSIONS_SHUTDOWN_DELAY_SECONDS, 10, TimeUnit.SECONDS);
     }
 
     @Override
@@ -84,7 +92,6 @@ public class Application implements AppShellConfigurator, ApplicationListener<Ap
                 try {
                     desktop.browse(URI.create(url));
                     System.out.println("Browser launched successfully");
-                    updateActivity(); // Record initial activity
                 } catch (IOException e) {
                     System.err.println("Failed to launch browser: " + e.getMessage());
                     System.out.println("Please open this URL manually: " + url);

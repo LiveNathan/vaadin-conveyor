@@ -14,7 +14,11 @@ import org.springframework.context.ConfigurableApplicationContext;
 import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 @SpringBootApplication
 @PageTitle("Vaadin+Conveyor POC")
@@ -23,23 +27,42 @@ public class Application implements AppShellConfigurator, ApplicationListener<Ap
 
     private static ConfigurableApplicationContext context;
     private static final AtomicBoolean browserOpened = new AtomicBoolean(false);
+    private static final AtomicLong lastActivity = new AtomicLong(System.currentTimeMillis());
+    private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private static final long SHUTDOWN_DELAY_MINUTES = 5; // Shut down after 5 minutes of no activity
 
     public static void main(String[] args) {
-        // Ensure we can use AWT/Desktop functionality
         System.setProperty("java.awt.headless", "false");
-
-        // Disable Vaadin's automatic browser launch since we'll handle it ourselves
         System.setProperty("vaadin.launch-browser", "false");
 
         context = SpringApplication.run(Application.class, args);
 
-        // Set up shutdown hook to ensure graceful shutdown
+        // Start the shutdown monitor
+        startShutdownMonitor();
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("Shutting down application...");
+            scheduler.shutdown();
             if (context != null && context.isActive()) {
                 context.close();
             }
         }));
+    }
+
+    public static void updateActivity() {
+        lastActivity.set(System.currentTimeMillis());
+    }
+
+    private static void startShutdownMonitor() {
+        scheduler.scheduleWithFixedDelay(() -> {
+            long timeSinceLastActivity = System.currentTimeMillis() - lastActivity.get();
+            long shutdownThreshold = SHUTDOWN_DELAY_MINUTES * 60 * 1000;
+
+            if (timeSinceLastActivity > shutdownThreshold) {
+                System.out.println("No activity detected for " + SHUTDOWN_DELAY_MINUTES + " minutes. Shutting down...");
+                System.exit(0);
+            }
+        }, 1, 1, TimeUnit.MINUTES);
     }
 
     @Override
@@ -48,7 +71,6 @@ public class Application implements AppShellConfigurator, ApplicationListener<Ap
             return;
         }
 
-        // Get the actual port the server started on
         ServletWebServerApplicationContext webServerAppContext =
                 (ServletWebServerApplicationContext) event.getApplicationContext();
         int port = webServerAppContext.getWebServer().getPort();
@@ -56,13 +78,13 @@ public class Application implements AppShellConfigurator, ApplicationListener<Ap
 
         System.out.println("Application started at: " + url);
 
-        // Open the default browser
         if (Desktop.isDesktopSupported()) {
             Desktop desktop = Desktop.getDesktop();
             if (desktop.isSupported(Desktop.Action.BROWSE)) {
                 try {
                     desktop.browse(URI.create(url));
                     System.out.println("Browser launched successfully");
+                    updateActivity(); // Record initial activity
                 } catch (IOException e) {
                     System.err.println("Failed to launch browser: " + e.getMessage());
                     System.out.println("Please open this URL manually: " + url);

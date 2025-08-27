@@ -2,40 +2,55 @@ package dev.nathanlively;
 
 import com.vaadin.flow.component.page.AppShellConfigurator;
 import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.server.ServiceInitEvent;
-import com.vaadin.flow.server.VaadinServiceInitListener;
 import com.vaadin.flow.theme.Theme;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.ConfigurableApplicationContext;
 
-/**
- * The entry point of the Spring Boot application.
- */
+import java.awt.*;
+import java.io.IOException;
+import java.net.URI;
+
+
 @SpringBootApplication
 @PageTitle("Vaadin+Conveyor POC")
 @Theme(value = "vaadin-conveyor")
-public class Application implements AppShellConfigurator {
+public class Application implements AppShellConfigurator, ApplicationListener<ApplicationReadyEvent> {
+
+    private static ConfigurableApplicationContext context;
 
     public static void main(String[] args) {
-        // Set system property to ensure clean shutdown
         System.setProperty("java.awt.headless", "false");
-        SpringApplication.run(Application.class, args);
+
+        context = SpringApplication.run(Application.class, args);
     }
 
-    @Component
-    public static class DesktopAppConfiguration implements VaadinServiceInitListener {
+    @Override
+    public void onApplicationEvent(ApplicationReadyEvent event) {
+        // Get the actual port the server started on
+        ServletWebServerApplicationContext webServerAppContext =
+                (ServletWebServerApplicationContext) event.getApplicationContext();
+        int port = webServerAppContext.getWebServer().getPort();
+        String url = "http://localhost:" + port;
 
-        @EventListener(ApplicationReadyEvent.class)
-        public void onApplicationReady() {
-            System.out.println("Vaadin desktop app is ready and browser should open automatically");
+        System.out.println("Application started at: " + url);
+
+        if (Desktop.isDesktopSupported()) {
+            try {
+                Desktop.getDesktop().browse(URI.create(url));
+            } catch (IOException e) {
+                System.err.println("Failed to launch browser: " + e.getMessage());
+            }
         }
 
-        @Override
-        public void serviceInit(ServiceInitEvent serviceInitEvent) {
-            serviceInitEvent.getSource().addSessionInitListener(_ -> {});
-        }
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutting down application...");
+            if (context != null) {
+                context.close();
+            }
+        }));
     }
 }

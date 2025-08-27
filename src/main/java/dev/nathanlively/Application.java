@@ -29,7 +29,7 @@ public class Application implements AppShellConfigurator, ApplicationListener<Ap
     private static final AtomicBoolean browserOpened = new AtomicBoolean(false);
     private static final AtomicLong lastActivity = new AtomicLong(System.currentTimeMillis());
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private static final long SHUTDOWN_DELAY_MINUTES = 5; // Shut down after 5 minutes of no activity
+    private static final long SHUTDOWN_DELAY_MINUTES = 1; // Shut down after 5 minutes of no activity
 
     public static void main(String[] args) {
         System.setProperty("java.awt.headless", "false");

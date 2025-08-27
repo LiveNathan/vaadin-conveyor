@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @PageTitle("Vaadin+Conveyor POC")
 @Theme(value = "vaadin-conveyor")
 public class Application implements AppShellConfigurator, ApplicationListener<ApplicationReadyEvent> {
-
+//
     private static ConfigurableApplicationContext context;
     private static final AtomicBoolean browserOpened = new AtomicBoolean(false);
     private static final AtomicInteger activeSessions = new AtomicInteger(0);

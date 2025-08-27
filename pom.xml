@@ -46,8 +46,7 @@
     <dependencies>
         <dependency>
             <groupId>com.vaadin</groupId>
-            <!-- Replace artifactId with vaadin-core to use only free components -->
-            <artifactId>vaadin</artifactId>
+            <artifactId>vaadin-core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.vaadin</groupId>
@@ -57,17 +56,6 @@
             <groupId>org.parttio</groupId>
             <artifactId>line-awesome</artifactId>
             <version>2.1.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
         <dependency>
@@ -109,7 +97,6 @@
                             <file>${project.basedir}/eclipse-formatter.xml</file>
                         </eclipse>
                     </java>
-                    <!-- Uncomment to format TypeScript files 
                         <typescript>
                         <includes>
                             <include>src/main/frontend/**/*.ts</include>
@@ -123,7 +110,6 @@
                             <configFile>.prettierrc.json</configFile>
                         </prettier>
                     </typescript>
-                -->
                 </configuration>
             </plugin>
             <plugin>

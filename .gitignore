@@ -20,3 +20,13 @@ drivers/
 error-screenshots/
 webpack.generated.js
 output
+
+# Conveyor generated keys (never commit these!)
+*.p12
+*.key
+*.crt
+gpg.key
+sparkle.key
+/text/apple.csr
+/text/defaults.conf
+/text/windows.csr

@@ -49,6 +49,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up JDK 24 (needed for Maven commands)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '24'
+          distribution: 'temurin'
+
+      - name: Extract version from POM
+        id: version
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
@@ -59,6 +72,7 @@ jobs:
         uses: hydraulic-software/conveyor/actions/build@v19.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APP_VERSION: ${{ steps.version.outputs.version }}
         with:
           command: make copied-site
           signing_key: ${{ secrets.SIGNING_KEY }}

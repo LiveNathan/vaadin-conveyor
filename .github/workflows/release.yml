@@ -40,6 +40,11 @@ jobs:
   release:
     needs: [build]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write        # Required for creating releases
+      pages: write          # Required for GitHub Pages
+      id-token: write       # Required for OIDC
+      actions: read         # Required for downloading artifacts
     steps:
       - name: Checkout
         uses: actions/checkout@v4

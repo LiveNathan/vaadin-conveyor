@@ -12,7 +12,6 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import java.awt.*;
-import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -86,21 +85,23 @@ public class Application implements AppShellConfigurator, ApplicationListener<Ap
 
         System.out.println("Application started at: " + url);
 
-        if (Desktop.isDesktopSupported()) {
-            Desktop desktop = Desktop.getDesktop();
-            if (desktop.isSupported(Desktop.Action.BROWSE)) {
-                try {
+        // More defensive desktop integration
+        try {
+            if (Desktop.isDesktopSupported()) {
+                Desktop desktop = Desktop.getDesktop();
+                if (desktop.isSupported(Desktop.Action.BROWSE)) {
                     desktop.browse(URI.create(url));
                     System.out.println("Browser launched successfully");
-                } catch (IOException e) {
-                    System.err.println("Failed to launch browser: " + e.getMessage());
-                    System.out.println("Please open this URL manually: " + url);
+                } else {
+                    System.out.println("Browse action not supported. Please open: " + url);
                 }
             } else {
-                System.out.println("Browse action not supported. Please open: " + url);
+                System.out.println("Desktop not supported. Please open: " + url);
             }
-        } else {
-            System.out.println("Desktop not supported. Please open: " + url);
+        } catch (Exception e) {
+            System.err.println("Failed to launch browser (this is normal on some systems): " + e.getMessage());
+            System.out.println("Please open this URL manually: " + url);
+            // Don't rethrow - browser launch failure shouldn't crash the app
         }
     }
 }

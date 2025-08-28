@@ -7,7 +7,7 @@
     <groupId>dev.nathanlively</groupId>
     <artifactId>vaadin-conveyor</artifactId>
     <name>vaadin-conveyor</name>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
     <packaging>jar</packaging>
 
     <properties>
